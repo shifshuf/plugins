@@ -1,0 +1,61 @@
+name: build-plugins
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    runs-on: macos-14
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: configure
+        run: cmake -S . -B build -G Ninja
+
+      - name: build
+        run: cmake --build build --config Release
+
+      - name: pack mac artifacts
+        run: |
+          mkdir -p artifacts/macos
+          cp -R "build/TodoListNative_artefacts/VST3/todo list.vst3" artifacts/macos/
+          cp -R "build/TodoListNative_artefacts/AU/todo list.component" artifacts/macos/
+          ditto -c -k --sequesterRsrc --keepParent artifacts/macos "artifacts/todo-list-macos.zip"
+
+      - name: upload mac artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: todo-list-macos
+          path: artifacts/todo-list-macos.zip
+          if-no-files-found: error
+
+  build-windows:
+    runs-on: windows-2022
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: configure
+        run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+
+      - name: build
+        run: cmake --build build --config Release
+
+      - name: pack windows artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts/windows | Out-Null
+          Copy-Item -Recurse -Path "build/TodoListNative_artefacts/VST3/todo list.vst3" -Destination "artifacts/windows/"
+          Compress-Archive -Path "artifacts/windows/*" -DestinationPath "artifacts/todo-list-windows.zip" -Force
+
+      - name: upload windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: todo-list-windows
+          path: artifacts/todo-list-windows.zip
+          if-no-files-found: error
