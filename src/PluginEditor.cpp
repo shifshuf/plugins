@@ -347,12 +347,13 @@ TodoListNativeAudioProcessorEditor::TodoListNativeAudioProcessorEditor (TodoList
     stats.setColour (juce::Label::textColourId, kMuted);
     stats.setJustificationType (juce::Justification::centredRight);
 
-    audioProcessor.onTasksChanged = [this]
+    auto safeThis = juce::Component::SafePointer<TodoListNativeAudioProcessorEditor> (this);
+    audioProcessor.onTasksChanged = [safeThis]
     {
-        juce::MessageManager::callAsync ([safe = juce::Component::SafePointer<TodoListNativeAudioProcessorEditor> (this)]
+        juce::MessageManager::callAsync ([safeThis]
         {
-            if (safe != nullptr)
-                safe->refreshFromState();
+            if (safeThis.getComponent() != nullptr)
+                safeThis->refreshFromState();
         });
     };
 
