@@ -50,7 +50,12 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path artifacts/windows | Out-Null
-          Copy-Item -Recurse -Path "build/TodoListNative_artefacts/VST3/todo list.vst3" -Destination "artifacts/windows/"
+          $vst3Dir = Get-ChildItem -Path "build" -Recurse -Directory -Filter "*.vst3" | Select-Object -First 1
+          if (-not $vst3Dir) {
+            Write-Error "No .vst3 bundle found under build/"
+            exit 1
+          }
+          Copy-Item -Recurse -Path $vst3Dir.FullName -Destination "artifacts/windows/"
           Compress-Archive -Path "artifacts/windows/*" -DestinationPath "artifacts/todo-list-windows.zip" -Force
 
       - name: upload windows artifact
